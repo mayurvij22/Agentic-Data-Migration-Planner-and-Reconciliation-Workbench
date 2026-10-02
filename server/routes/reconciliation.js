@@ -25,8 +25,12 @@ router.get('/:execId/compare', (req, res) => {
 
 // GET /api/reconciliation/:execId/quarantine — Quarantined records for execution
 router.get('/:execId/quarantine', (req, res) => {
-  const records = store.quarantinedRecords.filter(r => r.executionId === req.params.execId);
-  res.json({ records, total: records.length });
+  try {
+    const records = store.quarantinedRecords.filter(r => r.executionId === req.params.execId);
+    res.json({ records, total: records.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

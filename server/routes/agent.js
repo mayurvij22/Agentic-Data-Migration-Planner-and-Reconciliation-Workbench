@@ -6,7 +6,11 @@ const { getSupportedTransformations } = require('../engine/transformations');
 
 // GET /api/agent/status — Check if AI is initialized from GEMINI_API_KEY
 router.get('/status', (req, res) => {
-  res.json({ initialized: isInitialized() });
+  try {
+    res.json({ initialized: isInitialized() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // POST /api/agent/analyze — AI analyzes schemas and proposes mappings

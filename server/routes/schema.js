@@ -42,12 +42,16 @@ router.post('/target', (req, res) => {
 
 // GET /api/schema — Get both schemas
 router.get('/', (req, res) => {
-  res.json({
-    sourceSchema: store.sourceSchema,
-    targetSchema: store.targetSchema,
-    sourceRecordCount: store.sourceRecords.length,
-    maxSampleSize: store.maxSampleSize
-  });
+  try {
+    res.json({
+      sourceSchema: store.sourceSchema,
+      targetSchema: store.targetSchema,
+      sourceRecordCount: store.sourceRecords.length,
+      maxSampleSize: store.maxSampleSize
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // POST /api/schema/source/records — Upload source records
@@ -69,17 +73,21 @@ router.post('/source/records', (req, res) => {
 
 // GET /api/schema/source/records — Get source records (paginated)
 router.get('/source/records', (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-  const start = (page - 1) * limit;
-  const records = store.sourceRecords.slice(start, start + limit);
-  res.json({
-    records,
-    total: store.sourceRecords.length,
-    page,
-    limit,
-    totalPages: Math.ceil(store.sourceRecords.length / limit)
-  });
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const start = (page - 1) * limit;
+    const records = store.sourceRecords.slice(start, start + limit);
+    res.json({
+      records,
+      total: store.sourceRecords.length,
+      page,
+      limit,
+      totalPages: Math.ceil(store.sourceRecords.length / limit)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

@@ -12,8 +12,21 @@ async function request(method, path, body) {
   if (body !== undefined) {
     config.body = JSON.stringify(body);
   }
-  const res = await fetch(`${API_BASE}${path}`, config);
-  const data = await res.json();
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, config);
+  } catch (e) {
+    throw new Error('Could not reach the server. Check your connection and try again.');
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    throw new Error(`Server returned an unexpected response (status ${res.status})`);
+  }
+
   if (!res.ok) {
     throw new Error(data.error || `Request failed with status ${res.status}`);
   }

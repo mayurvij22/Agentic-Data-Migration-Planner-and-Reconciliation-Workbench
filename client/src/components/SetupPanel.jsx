@@ -207,7 +207,7 @@ export default function SetupPanel({
             <textarea
               className="textarea"
               rows={12}
-              placeholder='{\n  "name": "table_name",\n  "fields": [\n    { "name": "id", "type": "integer", "required": true }\n  ]\n}'
+              placeholder={'{\n  "name": "table_name",\n  "fields": [\n    { "name": "id", "type": "integer", "required": true }\n  ]\n}'}
               value={srcInput}
               onChange={(e) => setSrcInput(e.target.value)}
               id="input-source-schema"
@@ -229,7 +229,7 @@ export default function SetupPanel({
             <textarea
               className="textarea"
               rows={12}
-              placeholder='{\n  "name": "target_table",\n  "fields": [\n    { "name": "id", "type": "integer", "required": true }\n  ]\n}'
+              placeholder={'{\n  "name": "target_table",\n  "fields": [\n    { "name": "id", "type": "integer", "required": true }\n  ]\n}'}
               value={tgtInput}
               onChange={(e) => setTgtInput(e.target.value)}
               id="input-target-schema"
@@ -252,7 +252,7 @@ export default function SetupPanel({
           <textarea
             className="textarea"
             rows={10}
-            placeholder='[\n  { "id": 1, "name": "Alice", "email": "alice@example.com" },\n  { "id": 2, "name": "Bob", "email": "bob@example.com" }\n]'
+            placeholder={'[\n  { "id": 1, "name": "Alice", "email": "alice@example.com" },\n  { "id": 2, "name": "Bob", "email": "bob@example.com" }\n]'}
             value={recInput}
             onChange={(e) => setRecInput(e.target.value)}
             id="input-source-records"

@@ -32,49 +32,65 @@ app.use('/api/reconciliation', reconciliationRoutes);
 
 // GET /api/history — Full audit history
 app.get('/api/history', (req, res) => {
-  const { action, limit: limitStr } = req.query;
-  let logs = store.auditLog;
-  if (action) {
-    logs = logs.filter(l => l.action === action);
+  try {
+    const { action, limit: limitStr } = req.query;
+    let logs = store.auditLog;
+    if (action) {
+      logs = logs.filter(l => l.action === action);
+    }
+    const limit = Math.min(parseInt(limitStr) || 200, 500);
+    res.json({
+      history: logs.slice(-limit).reverse(),
+      total: logs.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-  const limit = Math.min(parseInt(limitStr) || 200, 500);
-  res.json({
-    history: logs.slice(-limit).reverse(),
-    total: logs.length
-  });
 });
 
 // GET /api/quarantine — All quarantined records
 app.get('/api/quarantine', (req, res) => {
-  res.json({
-    records: store.quarantinedRecords.slice(-100),
-    total: store.quarantinedRecords.length
-  });
+  try {
+    res.json({
+      records: store.quarantinedRecords.slice(-100),
+      total: store.quarantinedRecords.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // GET /api/health — Health check + store summary
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    store: {
-      hasSourceSchema: !!store.sourceSchema,
-      hasTargetSchema: !!store.targetSchema,
-      sourceRecords: store.sourceRecords.length,
-      targetRecords: store.targetRecords.length,
-      quarantinedRecords: store.quarantinedRecords.length,
-      plans: store.migrationPlans.length,
-      executions: store.migrationExecutions.length,
-      auditEntries: store.auditLog.length
-    }
-  });
+  try {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      store: {
+        hasSourceSchema: !!store.sourceSchema,
+        hasTargetSchema: !!store.targetSchema,
+        sourceRecords: store.sourceRecords.length,
+        targetRecords: store.targetRecords.length,
+        quarantinedRecords: store.quarantinedRecords.length,
+        plans: store.migrationPlans.length,
+        executions: store.migrationExecutions.length,
+        auditEntries: store.auditLog.length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // POST /api/reset — Reset in-memory store
 app.post('/api/reset', (req, res) => {
-  store.reset();
-  store.addAuditEntry('STORE_RESET', 'In-memory store has been reset');
-  res.json({ success: true, message: 'Store reset successfully' });
+  try {
+    store.reset();
+    store.addAuditEntry('STORE_RESET', 'In-memory store has been reset');
+    res.json({ success: true, message: 'Store reset successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ──────────── Auto-initialize AI if key in env ────────────

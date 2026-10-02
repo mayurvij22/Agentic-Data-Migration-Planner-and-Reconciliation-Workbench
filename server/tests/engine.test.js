@@ -267,11 +267,83 @@ test('plan version increments on update', () => {
 
 test('plan approval sets status to approved', () => {
   setup();
-  const plan = store.savePlan({ mappings: [{ sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' } }] });
+  const plan = store.savePlan({ mappings: [{ sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' }, isPrimaryKey: true }] });
   store.approvePlan(plan.id);
   const approved = store.migrationPlans.find(p => p.id === plan.id);
   assert.strictEqual(approved.status, 'approved');
   assert.ok(approved.approvedAt);
+});
+
+test('approval is blocked when no mapping is marked as primary key', () => {
+  setup();
+  const plan = store.savePlan({ mappings: [
+    { sourceField: 'status', targetField: 'full_name', transformation: { type: 'rename' } },
+    { sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' } },
+  ]});
+  assert.throws(() => store.approvePlan(plan.id), /primary key/i);
+  assert.strictEqual(store.migrationPlans.find(p => p.id === plan.id).status, 'draft');
+});
+
+test('approval is blocked when multiple mappings are marked as primary key', () => {
+  setup();
+  const plan = store.savePlan({ mappings: [
+    { sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' }, isPrimaryKey: true },
+    { sourceField: 'email', targetField: 'email_address', transformation: { type: 'rename' }, isPrimaryKey: true },
+  ]});
+  assert.throws(() => store.approvePlan(plan.id), /exactly one primary key/i);
+});
+
+test('distinct records sharing the first mapping value are not treated as duplicates', () => {
+  setup();
+  // 'full_name' is mapped first and repeats across records; the real key is staff_id.
+  store.setSourceRecords([
+    { id: 1, name: 'Same Name', email: 'a@test.com', salary: 10 },
+    { id: 2, name: 'Same Name', email: 'b@test.com', salary: 20 },
+  ]);
+  const plan = store.savePlan({ mappings: [
+    { sourceField: 'name', targetField: 'full_name', transformation: { type: 'rename' } },
+    { sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' }, isPrimaryKey: true },
+    { sourceField: 'email', targetField: 'email_address', transformation: { type: 'rename' } },
+    { sourceField: 'salary', targetField: 'pay', transformation: { type: 'rename' } },
+  ]});
+  store.approvePlan(plan.id);
+  const exec = executeMigration(plan.id, false);
+  assert.strictEqual(exec.counts.accepted, 2);
+  assert.strictEqual(exec.counts.duplicatesSkipped, 0);
+});
+
+test('transformation failures are counted as rejected, not only quarantined', () => {
+  setup();
+  store.setTargetSchema({
+    name: 'staff',
+    fields: [
+      { name: 'staff_id', type: 'integer', required: true },
+      { name: 'pay', type: 'integer', required: true },
+    ]
+  });
+  store.setSourceRecords([{ id: 1, name: 'A', email: 'a@test.com', salary: 'not-a-number' }]);
+  const plan = store.savePlan({ mappings: [
+    { sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' }, isPrimaryKey: true },
+    { sourceField: 'salary', targetField: 'pay', transformation: { type: 'typecast', targetType: 'integer' } },
+  ]});
+  const exec = executeMigration(plan.id, true);
+  assert.strictEqual(exec.counts.quarantined, 1);
+  assert.strictEqual(exec.counts.rejected, 1);
+  assert.strictEqual(exec.counts.accepted, 0);
+  assert.ok(exec.fieldErrors.length > 0, 'field-level error evidence is preserved');
+});
+
+test('every non-accepted, non-duplicate record is reflected in rejected', () => {
+  setup();
+  const plan = store.savePlan({ mappings: [
+    { sourceField: 'id', targetField: 'staff_id', transformation: { type: 'rename' }, isPrimaryKey: true },
+    { sourceField: 'name', targetField: 'full_name', transformation: { type: 'rename' } },
+    { sourceField: 'email', targetField: 'email_address', transformation: { type: 'rename' } },
+    { sourceField: 'salary', targetField: 'pay', transformation: { type: 'rename' } },
+  ]});
+  const exec = executeMigration(plan.id, true);
+  const { source, accepted, rejected, duplicatesSkipped } = exec.counts;
+  assert.strictEqual(source, accepted + rejected + duplicatesSkipped);
 });
 
 // ═══════════ Rollback Tests ═══════════

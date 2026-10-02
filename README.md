@@ -102,7 +102,7 @@ npm run dev
 node server/tests/engine.test.js
 ```
 
-Expected output: `36 passed, 0 failed`
+Expected output: `41 passed, 0 failed`
 
 ---
 
@@ -117,6 +117,8 @@ Expected output: `36 passed, 0 failed`
 ### Human Approval Gate
 
 > **The user must approve the mapping and transformation plan before execution.** The AI proposes mappings, but the human reviews, edits, and explicitly approves before any data is written to the target store.
+
+A plan can only be approved once **exactly one** mapping is marked as the **Primary Key**. That field is the identity used to skip duplicates when a migration is retried, so it must be chosen deliberately rather than inferred.
 
 ---
 
@@ -135,7 +137,7 @@ Expected output: `36 passed, 0 failed`
 - [x] Show source, transformed, accepted, rejected counts
 - [x] Preserve field-level error evidence
 - [x] Execute approved migration into mock target
-- [x] Prevent duplicate insertion on retry (hash-based dedup)
+- [x] Prevent duplicate insertion on retry (primary-key dedup)
 - [x] Compare source and target totals (reconciliation)
 - [x] Support rollback of mock migration
 - [x] Preserve execution, approval, retry, rollback history (audit log)

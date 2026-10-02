@@ -121,9 +121,8 @@ function executeMigration(planId, isDryRun = true) {
 
   store.addExecution(execution);
 
-  // Save rollback snapshot before real execution
   if (!isDryRun) {
-    store.saveRollbackSnapshot(executionId);
+    store.markRollbackable(executionId);
   }
 
   const mappings = plan.mappings;
@@ -138,6 +137,7 @@ function executeMigration(planId, isDryRun = true) {
     // Step 2: Check transformation errors → quarantine
     if (fieldErrors.length > 0) {
       execution.fieldErrors.push(...fieldErrors);
+      execution.counts.rejected++;
       execution.counts.quarantined++;
       const qRecord = {
         recordIndex: i,

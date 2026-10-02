@@ -20,7 +20,7 @@ class InMemoryStore {
     this.migrationPlans = [];
     this.migrationExecutions = [];
     this.auditLog = [];
-    this.rollbackSnapshots = {};
+    this.rollbackableExecutions = new Set();
   }
 
   // ──────────── Schema Management ────────────
@@ -74,6 +74,17 @@ class InMemoryStore {
     const plan = this.migrationPlans.find(p => p.id === planId);
     if (!plan) throw new Error('Plan not found');
     if (plan.status === 'approved') throw new Error('Plan already approved');
+
+    // Duplicate detection on retry keys off the primary-key mapping, so it must be
+    // designated explicitly — guessing a key silently drops distinct records.
+    const keyMappings = (plan.mappings || []).filter(m => m.isPrimaryKey);
+    if (keyMappings.length === 0) {
+      throw new Error('Plan must designate exactly one mapping as the primary key before approval. Mark the uniquely identifying field with isPrimaryKey.');
+    }
+    if (keyMappings.length > 1) {
+      throw new Error(`Plan must designate exactly one primary key mapping, found ${keyMappings.length}: ${keyMappings.map(m => m.targetField).join(', ')}`);
+    }
+
     plan.status = 'approved';
     plan.approvedAt = new Date().toISOString();
     this.addAuditEntry('PLAN_APPROVED', `Plan ${planId} v${plan.version} approved`, { planId, version: plan.version });
@@ -115,20 +126,29 @@ class InMemoryStore {
     return null;
   }
 
-  // ──────────── Rollback Snapshots ────────────
+  // ──────────── Rollback Eligibility ────────────
 
-  saveRollbackSnapshot(executionId) {
-    this.rollbackSnapshots[executionId] = {
-      targetRecordCount: this.targetRecords.length,
-      savedAt: new Date().toISOString()
-    };
+  // Inserted records carry an _executionId tag, which is what rollback filters on.
+  // This only records that an execution wrote data and has not been rolled back yet.
+  markRollbackable(executionId) {
+    this.rollbackableExecutions.add(executionId);
+  }
+
+  isRollbackable(executionId) {
+    return this.rollbackableExecutions.has(executionId);
+  }
+
+  clearRollbackable(executionId) {
+    this.rollbackableExecutions.delete(executionId);
   }
 
   // ──────────── Duplicate Detection ────────────
 
   isDuplicate(record, mappings) {
-    const keyMapping = mappings.find(m => m.isPrimaryKey) || mappings[0];
-    if (!keyMapping) return false;
+    const keyMapping = mappings.find(m => m.isPrimaryKey);
+    if (!keyMapping) {
+      throw new Error('Cannot check for duplicates: plan has no primary key mapping');
+    }
     const targetField = keyMapping.targetField;
     const value = record[targetField];
     return this.targetRecords.some(r => r[targetField] === value);

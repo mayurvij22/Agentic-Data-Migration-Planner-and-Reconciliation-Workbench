@@ -9,6 +9,7 @@ export default function PlanPanel({ toast, currentPlan, onPlanUpdate, sourceSche
   const [editMode, setEditMode] = useState(false);
   const [mappings, setMappings] = useState([]);
   const [loading, setLoading] = useState({});
+  const primaryKeyCount = mappings.filter(m => m.isPrimaryKey).length;
 
   useEffect(() => {
     if (currentPlan?.mappings) {
@@ -70,6 +71,11 @@ export default function PlanPanel({ toast, currentPlan, onPlanUpdate, sourceSche
       }
       return copy;
     });
+  };
+
+  // Exactly one mapping may be the primary key — it drives retry duplicate detection.
+  const setPrimaryKey = (index, checked) => {
+    setMappings(prev => prev.map((m, i) => ({ ...m, isPrimaryKey: checked && i === index })));
   };
 
   const removeMapping = (index) => {
@@ -168,7 +174,8 @@ export default function PlanPanel({ toast, currentPlan, onPlanUpdate, sourceSche
             </>
           )}
           {currentPlan?.status === 'draft' && !editMode && (
-            <button className="btn btn-success btn-lg" onClick={handleApprove} disabled={loading.approve || mappings.length === 0} id="btn-approve-plan">
+            <button className="btn btn-success btn-lg" onClick={handleApprove}
+              disabled={loading.approve || mappings.length === 0 || primaryKeyCount !== 1} id="btn-approve-plan">
               {loading.approve ? <Loader size={16} className="animate-pulse" /> : <ThumbsUp size={16} />}
               Approve Plan
             </button>
@@ -179,6 +186,16 @@ export default function PlanPanel({ toast, currentPlan, onPlanUpdate, sourceSche
             </span>
           )}
         </div>
+        {currentPlan?.status === 'draft' && mappings.length > 0 && primaryKeyCount !== 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'var(--space-3)', color: 'var(--warning)' }}>
+            <AlertTriangle size={16} />
+            <span>
+              {primaryKeyCount === 0
+                ? 'Mark exactly one mapping as the Primary Key before approving — it identifies records so a retried migration skips duplicates instead of inserting them twice.'
+                : `${primaryKeyCount} mappings are marked as Primary Key. Exactly one is required.`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Mappings Table ── */}
@@ -260,7 +277,7 @@ export default function PlanPanel({ toast, currentPlan, onPlanUpdate, sourceSche
                     <td>
                       {editMode ? (
                         <input type="checkbox" checked={!!m.isPrimaryKey}
-                          onChange={(e) => updateMapping(i, 'isPrimaryKey', e.target.checked)}
+                          onChange={(e) => setPrimaryKey(i, e.target.checked)}
                           style={{ width: 16, height: 16, accentColor: 'var(--violet)' }} />
                       ) : (
                         m.isPrimaryKey ? <CheckCircle size={16} style={{ color: 'var(--success)' }} /> : '—'

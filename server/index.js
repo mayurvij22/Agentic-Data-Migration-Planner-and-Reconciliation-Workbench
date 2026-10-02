@@ -87,13 +87,18 @@ if (process.env.GEMINI_API_KEY) {
   }
 }
 
+// ──────────── Unmatched API routes ────────────
+// Must answer explicitly: if an /api request reaches the SPA catch-all below
+// without a response, the serverless function hangs until its timeout.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `No such API route: ${req.method} ${req.originalUrl}` });
+});
+
 // ──────────── Serve static files in production ────────────
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
   app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(__dirname, '../dist/index.html'));
-    }
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
 }
 

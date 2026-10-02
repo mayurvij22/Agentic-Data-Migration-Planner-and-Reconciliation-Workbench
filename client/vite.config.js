@@ -13,7 +13,10 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
+    // Emit to the repo root so the bundle is found whether Vercel resolves the
+    // output directory from the repo root or from this package.
+    outDir: '../dist',
+    emptyOutDir: true,
     sourcemap: false
   }
 });

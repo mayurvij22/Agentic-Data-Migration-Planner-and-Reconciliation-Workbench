@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "client/dist",
+  "outputDirectory": "dist",
   "functions": {
     "api/index.js": {
       "maxDuration": 30

@@ -176,8 +176,7 @@ node server/tests/engine.test.js
 | `GET` | `/api/schema` | Get both schemas |
 | `POST` | `/api/schema/source/records` | Upload source records |
 | `GET` | `/api/schema/source/records` | Get records (paginated) |
-| `POST` | `/api/agent/init` | Initialize AI with API key |
-| `GET` | `/api/agent/status` | Check AI initialization |
+| `GET` | `/api/agent/status` | Report whether the AI agent is configured (key comes from `GEMINI_API_KEY`) |
 | `POST` | `/api/agent/analyze` | AI schema analysis |
 | `POST` | `/api/agent/risks` | AI risk assessment |
 | `POST` | `/api/agent/questions` | AI clarification questions |

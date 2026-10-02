@@ -82,8 +82,12 @@ export default function AgentPanel({ toast, aiReady, sourceSchema, targetSchema,
         </div>
         <div className="empty-state">
           <Brain size={48} />
-          <h3>AI Agent Not Initialized</h3>
-          <p>Go to the Setup tab and enter your Gemini API key to initialize the AI agent.</p>
+          <h3>AI Agent Not Configured</h3>
+          <p>
+            Set the <code>GEMINI_API_KEY</code> environment variable on the server, then restart or
+            redeploy. Use the value <code>mock</code> to run without a real key. You can still build the
+            mapping plan by hand on the Plan tab.
+          </p>
         </div>
       </div>
     );

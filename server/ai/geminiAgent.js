@@ -7,9 +7,15 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// Gemini model generations are retired on a rolling basis, so the model is
+// configurable — a hardcoded id eventually starts returning 404.
+const DEFAULT_MODEL = 'gemini-3.5-flash';
+
 let genAI = null;
 let model = null;
 let isMock = false;
+let activeKey = null;
+let modelName = DEFAULT_MODEL;
 
 /**
  * Initialize the AI agent with a Gemini API key.
@@ -22,8 +28,60 @@ function initializeAI(apiKey) {
     return;
   }
   isMock = false;
+  activeKey = apiKey;
+  modelName = process.env.GEMINI_MODEL || DEFAULT_MODEL;
   genAI = new GoogleGenerativeAI(apiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  model = genAI.getGenerativeModel({ model: modelName });
+}
+
+/**
+ * Ask the API which models this key can actually use, so an unavailable
+ * model produces an actionable error instead of a bare 404.
+ */
+async function listSupportedModels() {
+  if (!activeKey) return [];
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${activeKey}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => String(m.name).replace(/^models\//, ''));
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Run a prompt and parse the JSON response.
+ */
+async function generateJSON(prompt, label) {
+  let text;
+  try {
+    const result = await model.generateContent(prompt);
+    text = result.response.text();
+  } catch (error) {
+    if (/not found|404|not supported/i.test(error.message)) {
+      const available = await listSupportedModels();
+      throw new Error(
+        `Gemini model "${modelName}" is not available for this API key. ` +
+        (available.length
+          ? `Set the GEMINI_MODEL env variable to one of: ${available.slice(0, 8).join(', ')}`
+          : 'Set the GEMINI_MODEL env variable to a current model id from https://ai.google.dev/gemini-api/docs/models')
+      );
+    }
+    throw error;
+  }
+
+  // Strip markdown code fences if the model wrapped the JSON
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const jsonStr = jsonMatch ? jsonMatch[1].trim() : text.trim();
+
+  try {
+    return JSON.parse(jsonStr);
+  } catch (parseError) {
+    throw new Error(`AI returned invalid JSON for ${label}. Raw response: ${text.substring(0, 300)}`);
+  }
 }
 
 /**
@@ -37,7 +95,7 @@ function isInitialized() {
  * Analyze source and target schemas, propose field mappings.
  */
 async function analyzeSchemas(sourceSchema, targetSchema, supportedTransformations) {
-  if (!model) throw new Error('AI not initialized. Please provide a Gemini API key.');
+  if (!model) throw new Error('AI agent is not configured. Set the GEMINI_API_KEY environment variable on the server (use "mock" to run without a real key).');
 
   if (isMock) {
     // Mock response tailored to the Employee -> Staff sample data
@@ -115,25 +173,14 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
   "summary": "Brief overall assessment of this migration"
 }`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-
-  // Extract JSON from potential markdown code blocks
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const jsonStr = jsonMatch ? jsonMatch[1].trim() : text.trim();
-
-  try {
-    return JSON.parse(jsonStr);
-  } catch (parseError) {
-    throw new Error(`AI returned invalid JSON. Raw response: ${text.substring(0, 500)}`);
-  }
+  return generateJSON(prompt, 'schema analysis');
 }
 
 /**
  * Assess risks for a set of field mappings.
  */
 async function assessRisks(mappings, sourceSchema, targetSchema) {
-  if (!model) throw new Error('AI not initialized');
+  if (!model) throw new Error('AI agent is not configured. Set the GEMINI_API_KEY environment variable on the server (use "mock" to run without a real key).');
 
   if (isMock) {
     return new Promise(resolve => setTimeout(() => resolve({
@@ -188,23 +235,14 @@ Respond ONLY with valid JSON (no markdown, no explanation):
   "recommendations": ["Recommendation 1"]
 }`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const jsonStr = jsonMatch ? jsonMatch[1].trim() : text.trim();
-
-  try {
-    return JSON.parse(jsonStr);
-  } catch (parseError) {
-    throw new Error(`AI returned invalid JSON for risk assessment.`);
-  }
+  return generateJSON(prompt, 'risk assessment');
 }
 
 /**
  * Generate clarification questions for ambiguous mappings.
  */
 async function generateQuestions(sourceSchema, targetSchema, mappings) {
-  if (!model) throw new Error('AI not initialized');
+  if (!model) throw new Error('AI agent is not configured. Set the GEMINI_API_KEY environment variable on the server (use "mock" to run without a real key).');
 
   if (isMock) {
     return new Promise(resolve => setTimeout(() => resolve({
@@ -251,16 +289,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
   ]
 }`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const jsonStr = jsonMatch ? jsonMatch[1].trim() : text.trim();
-
-  try {
-    return JSON.parse(jsonStr);
-  } catch (parseError) {
-    throw new Error(`AI returned invalid JSON for questions.`);
-  }
+  return generateJSON(prompt, 'clarification questions');
 }
 
 module.exports = { initializeAI, isInitialized, analyzeSchemas, assessRisks, generateQuestions };

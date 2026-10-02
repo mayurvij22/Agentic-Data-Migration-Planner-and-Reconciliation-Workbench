@@ -47,8 +47,7 @@ const SAMPLE_RECORDS = [
 
 export default function SetupPanel({
   toast, sourceSchema, targetSchema, sourceRecordCount,
-  onSourceSchemaSet, onTargetSchemaSet, onRecordsLoaded,
-  apiKey, onApiKeyChange, aiReady, onAiReady
+  onSourceSchemaSet, onTargetSchemaSet, onRecordsLoaded, aiReady
 }) {
   const [srcInput, setSrcInput] = useState('');
   const [tgtInput, setTgtInput] = useState('');
@@ -111,20 +110,6 @@ export default function SetupPanel({
     }
   };
 
-  const handleInitAI = async () => {
-    if (!apiKey.trim()) return toast('Please enter your Gemini API key', 'warning');
-    setLoading(p => ({ ...p, ai: true }));
-    try {
-      await api.initAgent(apiKey);
-      onAiReady(true);
-      toast('AI Agent initialized successfully', 'success');
-    } catch (e) {
-      toast(e.message, 'error');
-    } finally {
-      setLoading(p => ({ ...p, ai: false }));
-    }
-  };
-
   return (
     <div>
       <div className="panel-header">
@@ -182,31 +167,31 @@ export default function SetupPanel({
         </div>
       </div>
 
-      {/* ── AI Key ── */}
+      {/* ── AI Status ── */}
       <div className="section">
         <div className="section-title"><Key size={18} /> Gemini AI Configuration</div>
         <div className="card">
-          <div className="api-key-section">
-            <div className="input-group" style={{ flex: 1 }}>
-              <label className="label">Gemini API Key</label>
-              <input
-                type="password"
-                className="input"
-                placeholder="Enter your Google Gemini API key..."
-                value={apiKey}
-                onChange={(e) => onApiKeyChange(e.target.value)}
-                id="input-api-key"
-              />
-            </div>
-            <button className="btn btn-primary" onClick={handleInitAI} disabled={loading.ai || aiReady} id="btn-init-ai">
-              {loading.ai ? <Loader size={16} className="animate-pulse" /> : aiReady ? <CheckCircle size={16} /> : <Key size={16} />}
-              {aiReady ? 'Connected' : 'Initialize'}
-            </button>
-          </div>
-          {aiReady && (
-            <div style={{ marginTop: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {aiReady ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="status-dot success" />
-              <span style={{ color: 'var(--success)', fontSize: '0.82rem', fontWeight: 500 }}>AI Agent is ready for schema analysis</span>
+              <span style={{ color: 'var(--success)', fontSize: '0.88rem', fontWeight: 600 }}>
+                AI agent is configured and ready for schema analysis
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <AlertCircle size={18} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ color: 'var(--warning)', fontSize: '0.88rem', fontWeight: 600 }}>
+                  AI agent is not configured
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginTop: 4 }}>
+                  Set the <code>GEMINI_API_KEY</code> environment variable on the server and restart or
+                  redeploy. Use the value <code>mock</code> to run the agent without a real key. Everything
+                  else in this workbench works without the AI agent — you can build the mapping plan by hand
+                  on the Plan tab.
+                </p>
+              </div>
             </div>
           )}
         </div>

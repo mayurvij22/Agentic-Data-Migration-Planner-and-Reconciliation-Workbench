@@ -36,8 +36,7 @@ const api = {
   uploadRecords: (records) => post('/schema/source/records', { records }),
   getRecords: (page = 1, limit = 20) => get(`/schema/source/records?page=${page}&limit=${limit}`),
 
-  // ── AI Agent ──
-  initAgent: (apiKey) => post('/agent/init', { apiKey }),
+  // ── AI Agent (key comes from the server's GEMINI_API_KEY env variable) ──
   agentStatus: () => get('/agent/status'),
   analyzeSchemas: () => post('/agent/analyze'),
   assessRisks: (mappings) => post('/agent/risks', { mappings }),

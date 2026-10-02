@@ -35,7 +35,6 @@ const NAV_ITEMS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('setup');
-  const [apiKey, setApiKey] = useState('');
   const [aiReady, setAiReady] = useState(false);
 
   // ── App state ──
@@ -138,10 +137,7 @@ export default function App() {
               onSourceSchemaSet={setSourceSchema}
               onTargetSchemaSet={setTargetSchema}
               onRecordsLoaded={setSourceRecordCount}
-              apiKey={apiKey}
-              onApiKeyChange={setApiKey}
               aiReady={aiReady}
-              onAiReady={setAiReady}
             />
           )}
           {activeTab === 'agent' && (

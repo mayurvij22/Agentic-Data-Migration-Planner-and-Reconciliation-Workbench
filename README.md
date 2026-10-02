@@ -2,7 +2,7 @@
 
 An AI-powered application for planning, validating, and executing data migrations between source and target schemas. Built with the MERN stack (MongoDB-less in-memory variant) and Google Gemini AI.
 
-![Migration Planner](https://img.shields.io/badge/Stack-MERN-green) ![AI](https://img.shields.io/badge/AI-Gemini%201.5-blue) ![Tests](https://img.shields.io/badge/Tests-36%20passing-brightgreen)
+![Migration Planner](https://img.shields.io/badge/Stack-MERN-green) ![AI](https://img.shields.io/badge/AI-Gemini-blue) ![Tests](https://img.shields.io/badge/Tests-41%20passing-brightgreen)
 
 ---
 
@@ -12,7 +12,7 @@ An AI-powered application for planning, validating, and executing data migration
 
 **Test credentials / sample inputs:**
 - Click **"Load Sample Data"** on the Setup tab for a pre-built Employee → Staff migration with 10 records (includes edge cases)
-- Enter your Gemini API key in the Setup tab to enable AI features
+- AI features read the key from the server's `GEMINI_API_KEY` env variable (set it to `mock` to run without a real key)
 
 ---
 
@@ -73,7 +73,7 @@ cd client && npm install && cd ..
 # Copy env template
 cp .env.example .env
 
-# Edit .env and add your Gemini API key (optional — can also be entered via UI)
+# Edit .env and add your Gemini API key (use "mock" to run without a real key)
 # GEMINI_API_KEY=your_key_here
 ```
 
@@ -108,7 +108,7 @@ Expected output: `41 passed, 0 failed`
 
 ## 📋 Workflow
 
-1. **Setup** — Define source and target schemas (JSON), upload source records, configure Gemini API key
+1. **Setup** — Define source and target schemas (JSON), upload source records, confirm AI agent status
 2. **AI Agent** — Run AI analysis to get proposed field mappings, risk assessment, and clarification questions
 3. **Plan** — Review/edit the migration plan, configure transformations, approve the plan
 4. **Execute** — Run deterministic dry runs, execute approved migrations, compare source vs target, rollback if needed
@@ -144,7 +144,7 @@ A plan can only be approved once **exactly one** mapping is marked as the **Prim
 - [x] Limit to one source, one target, max 500 sample records
 - [x] 11 supported transformation types
 - [x] Clear loading, empty, validation, success, and failure states
-- [x] 36 automated tests for all engines
+- [x] 41 automated tests for all engines
 - [x] Structured audit log with action-specific metadata
 - [x] Premium dark-themed UI with glassmorphism
 - [x] Vercel deployment configuration
@@ -169,12 +169,12 @@ Tests cover all backend engines:
 |---|---|---|
 | Transformations | 16 | All 11 types + edge cases |
 | Validation | 7 | Required, type, length, range, enum |
-| Migration Engine | 4 | Dry run, approval gate, execution, dedup |
-| Plan Versioning | 2 | Version increment, approval status |
+| Migration Engine | 5 | Dry run, approval gate, execution, retry dedup |
+| Plan Versioning | 7 | Version increment, approval status, primary-key gate, reject/quarantine counts |
 | Rollback | 3 | Record removal, status update, dry-run guard |
 | Reconciliation | 1 | Balanced count verification |
 | Audit Log | 2 | Schema changes, plan operations |
-| **Total** | **36** | **All passing** |
+| **Total** | **41** | **All passing** |
 
 Run: `node server/tests/engine.test.js`
 
@@ -211,7 +211,8 @@ Set in Vercel dashboard → Settings → Environment Variables:
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Optional | Auto-initializes AI agent (can also be entered via UI) |
+| `GEMINI_API_KEY` | Optional | Initializes the AI agent at startup. Use `mock` to run without a real key |
+| `GEMINI_MODEL` | Optional | Gemini model id, defaults to `gemini-3.5-flash`. Set a current id from [the model list](https://ai.google.dev/gemini-api/docs/models) if the default 404s |
 | `NODE_ENV` | Auto-set | Set to `production` by Vercel |
 
 ### Vercel Configuration

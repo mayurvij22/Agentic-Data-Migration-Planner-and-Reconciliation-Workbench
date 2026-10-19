@@ -1,20 +1,24 @@
-# Agentic Data Migration Planner & Reconciliation Workbench
+<div align="center">
 
-An AI-powered application for planning, validating, and executing data migrations between source and target schemas. Built with the MERN stack (MongoDB-less in-memory variant) and Google Gemini AI.
+# 🔄 Agentic Data Migration Planner & Reconciliation Workbench
 
-![Migration Planner](https://img.shields.io/badge/Stack-MERN-green) ![AI](https://img.shields.io/badge/AI-Gemini-blue) ![Tests](https://img.shields.io/badge/Tests-41%20passing-brightgreen)
+**Plan, validate, execute and reconcile data migrations between source and target schemas. A Gemini agent proposes
+the mapping, and a human approves it before anything runs.**
+
+![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?logo=googlegemini&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-41%20passing-brightgreen)
+
+</div>
+
+> [!TIP]
+> **Try it in seconds:** click **"Load Sample Data"** on the Setup tab for a ready-made Employee → Staff migration
+> with 10 records, including edge cases. Set `GEMINI_API_KEY=mock` to run the whole flow without a real API key.
 
 ---
 
-## 🚀 Live Demo
-
-**Deployed at:** *(Add Vercel URL after deployment)*
-
-**Test credentials / sample inputs:**
-- Click **"Load Sample Data"** on the Setup tab for a pre-built Employee → Staff migration with 10 records (includes edge cases)
-- AI features read the key from the server's `GEMINI_API_KEY` env variable (set it to `mock` to run without a real key)
-
----
 
 ## 📐 Architecture
 
@@ -270,3 +274,11 @@ The `vercel.json` routes `/api/*` to the Express serverless function and serves 
 ## 📜 License
 
 MIT
+
+---
+
+<div align="center">
+
+Made by **[Mayur Patil](https://github.com/mayurvij22)**
+
+</div>
